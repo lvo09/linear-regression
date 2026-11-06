@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Art of Linear Regression — Interactive Notes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
+<style>
+:root{--ink:#07264c;--bg:#fff0f7;--pk:#eca9c5;--line:#f3cfe0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.72 "Open Sans",system-ui,sans-serif}
+main{width:min(1120px,calc(100% - 36px));margin:44px auto 80px}
+h1,h2{color:var(--pk)}
+h1{margin:.35rem 0 .5rem;font-size:clamp(2rem,5vw,3.25rem);line-height:1.12}
+h2{margin:0 0 .3rem;font-size:clamp(1.45rem,3vw,1.9rem)}
+h3{margin:0 0 1rem;color:var(--pk);font-size:1.05rem;font-weight:600}
+header{padding:18px 0 30px;border-bottom:1px solid var(--line)}
+header p{max-width:none;margin:0}
+section{margin-top:42px}
+p{max-width:none}
+.m{font-weight:700}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;align-items:start;margin:24px 0}
+.fig{min-width:0}
+svg{display:block;width:100%;height:auto;overflow:visible}
+mjx-container svg{display:inline-block;width:auto}
+.cap{margin:10px 3px 2px;font-size:.88rem;line-height:1.5}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:18px 0}
+.ctl label{display:flex;flex-wrap:wrap;align-items:center;gap:9px;font-size:.94rem}
+input[type=range]{width:min(230px,55vw);accent-color:var(--pk);cursor:pointer}
+input[type=checkbox]{accent-color:var(--pk)}
+button{border:1px solid var(--pk);border-radius:9px;padding:9px 13px;background:#fff;color:var(--ink);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
+button:hover{background:var(--pk)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.ro{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.ro span{flex:1 1 190px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.bad{text-decoration:underline wavy var(--pk);text-underline-offset:4px}
+.box{margin:18px 0 0;padding-left:14px;border-left:3px solid var(--pk)}
+.ax{stroke:var(--ink);stroke-width:1.2;opacity:.6}
+.zero{stroke:var(--ink);stroke-dasharray:4 4;opacity:.4}
+.tx{fill:var(--ink);font:11px "Open Sans",sans-serif}
+@media(max-width:760px){main{margin:14px auto 42px}.row{grid-template-columns:1fr}.ctl label,.ctl button{width:100%}}
+</style>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']]},svg:{fontCache:'global'}}</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async></script>
+</head>
+<body>
+<main>
+<header><h1>The Art of Linear Regression</h1>
+<p>Part I: Motivation and Assumptions behind Linear Regression.</p></header>
+
+<section><h2>1. Motivation</h2>
+<p>
+  Suppose we want to understand how an outcome is related to other variables. For example, how much do wages
+  change with an extra year of education? In the population, some unknown data generating process produces the
+  outcome from these variables, along with many other factors we do not observe or understand.
+</p>
+<p>
+  Unfortunately, we never see this process directly, only a sample of observations from it. What we can do is choose a simple model, such as a straight line, to approximate how the average outcome changes with the variable of interest.
+Linear regression is the tool for estimating that model from data, and it lets us ask how much the outcome moves on average when a covariate changes by one unit.
+</p>
+
+
+<p>Suppose we construct a model: \(Y = \beta_0 + \beta_1X + u\) where</p>
+<ul>
+  <li>\(Y\) is the outcome,</li>
+  <li>\(X\) is the regressor,</li>
+  <li>\(u\) is the error term, representing everything affecting Y that are not being captured by this model.</li>
+</ul>
+
+</section>
+
+<section><h2>2. Mean independence of the error</h2>
+<p>The error term \(u\) is mean independent of the regressor if \(E[u|X] = 0\). This is because \(E[u|X]\) is a function of X and it is constant regardless of X values.</p>
+
+<div class="ctl">
+  <button id="miInd">\(E[u \mid X] = 0\)</button>
+  <button id="miDep">\(E[u \mid X] = g(X)\)</button>
+</div>
+
+<div class="row">
+  <div class="fig">
+    <svg id="mi" viewBox="0 0 440 320" role="img" aria-label="Error term u against X with conditional means"></svg>
+    <p class="cap" id="miCap"></p>
+  </div>
+  <div>
+    <div class="ro" id="miRo"></div>
+  </div>
+</div>
+<p> One way to interpret mean independence is that knowing X values gives you no information about the mean of \(u\). Formally, \(E[u|X] = E[u]\) where the conditional mean will stay the same as the mean regardless of X values.</p> 
+<p>Mean independence of error is a required assumption when using Linear Regression. Otherwise, the model is not correctly specified which leads to meaningless interpretation of effects because it will combine the effect of X and some other unobserved omitted variable. </p>
+<p> It is worth noting that \(E[X|u] = 0\) is a stronger condition than \(E[u]=0\). By Iterated Law of Expectation, we have \(E[E[u|X]]=E[X]\). Hence, if \(E[X|u] = 0\), \(E[E[u|X]]= E[0] = 0 = E[X]\). The reverse might not be true, meaning \(E[u] = 0\) does not imply \(E[X|u] = 0\). </p>
+<p>Let's illustrate this idea with an example. Suppose wages are generated by \(\text{Wage} = 10 + 1.5\,\text{Education} + u\), where \(u = 3\cdot\text{motivation}\). The true effect of one more year of education is \(1.5\). Move the slider to change how strongly motivated people choose more education.</p>
+<div class="ctl">
+<label>Correlation of motivation with education <input type="range" id="rho" min="0" max="0.9" step="0.05" value="0" aria-label="Correlation"> <b id="rhoV" class="m">0.00</b></label>
+<button id="b0">Motivation and education are independent</button><button id="b1">Motivated people study more</button>
+</div>
+<div class="row">
+<div class="fig"><svg id="s1a" viewBox="0 0 440 320" role="img" aria-label="Error term against education with conditional means"></svg><p class="cap">Dots are individual errors \(u\). The pink line joins the average of \(u\) within each education bracket, which is \(E[u \mid \text{Ed}]\).</p></div>
+<div class="fig"><svg id="s1b" viewBox="0 0 440 320" role="img" aria-label="Wage against education with true and fitted lines"></svg><p class="cap">Dashed navy is the true relationship (slope \(1.5\)). Pink is what least squares estimates.</p></div>
+</div>
+<div class="ro" id="r1"></div>
+
+<p>When motivation and education are independent, our estimated coefficient is correctly recovered. This means that we correctly discover the effect of education on wage. Meanwhile, if motivation and education are correlated, then the estimated coefficient blends the effect of them both. If we don't account for this omitted variable and interpret this coefficient as the effect of education on wage, we effectively overestimate it and fail to discover the true effect which is the purpose of our study. </p>
+<p> One way to ensure education and motivation are independent is through Randomized Controlled Trials where we randomly select individuals for our study.</p>
+
+</section>
+
+<section><h2>3. Linear in the parameters</h2>
+<p>\(y = \beta_1 + \beta_2 x^2 + u\) is a curve in \(x\), yet a straight line once you treat \(z = x^2\) as the regressor. That is why it counts as a linear model.</p>
+<div class="ctl"><label>\(\beta_2\) <input type="range" id="b2" min="-1" max="1" step="0.05" value="0.5" aria-label="beta 2"> <b id="b2V" class="m">0.50</b></label></div>
+<div class="row">
+<div class="fig"><svg id="s2a" viewBox="0 0 440 280" role="img" aria-label="y against x curve"></svg><p class="cap">\(y\) against \(x\): clearly non-linear.</p></div>
+<div class="fig"><svg id="s2b" viewBox="0 0 440 280" role="img" aria-label="y against x squared line"></svg><p class="cap">\(y\) against \(x^2\): a straight line with slope \(\beta_2\).</p></div>
+</div>
+<p>A model like \(y = \beta_1^2 x + u\) is non-linear because the parameter itself enters non-linearly.</p>
+<p>It is much easier to work with linear models while nonlinear relationships between variables can still be represented.</p>
+
+</section>
+
+<section><h2>4. Ordinary Least Squares (OLS): Fitting the line</h2>
+<p>
+  Suppose \(y_i = \beta_0 + \beta x_i + u_i\). Least squares is an estimation technique that chooses
+  \(\hat\beta_0\) and \(\hat\beta\) to make the fitted values \(\hat y_i = \hat\beta_0 + \hat\beta x_i\)
+  as close as possible to the observed values \(y_i\). The gap between them is the residual,
+  \(\hat u_i = y_i - \hat y_i\), and the estimates are the values that minimise the sum of squared residuals:
+</p>
+
+
+\[
+\min_{\beta_0,\,\beta_1} \text{RSS}(\beta_0, \beta_1)
+= \min_{\beta_0,\,\beta_1} \sum_{i=1}^{n} \left(y_i - \beta_0 - x_i\beta_1\right)^2 .
+\]
+
+<p>To find the minimum, take the derivative with respect to each parameter and set it to zero.</p>
+
+<div>
+  <b>Condition 1: the intercept.</b> Differentiating with respect to \(\beta_0\) gives
+
+  \[
+  \frac{\partial\,\text{RSS}}{\partial \beta_0} = -2\sum_{i=1}^{n}\left(y_i - \beta_0 - x_i\beta_1\right).
+  \]
+
+  Solving for \(\beta_0\) by setting this to zero gives
+
+  \[
+  \sum_{i=1}^{n}{\left(y_i - \hat\beta_0 - x_i\hat\beta_1\right)} = 0
+  \quad\Longleftrightarrow\quad \sum_{i=1}^{n}\hat u_i = 0 .
+  \]
+
+  So to estimate the intercept \(\beta_0\), the sum of the residuals must be \(0\).
+  (This might not be the case for models with no intercept.)
+</div>
+
+<div>
+  <b>Condition 2: the slope.</b> Differentiating with respect to \(\beta_1\) gives
+
+  \[
+  \frac{\partial\,\text{RSS}}{\partial \beta_1} = -2\sum_{i=1}^{n}\left(y_i - \beta_0 - x_i\beta_1\right)x_i .
+  \]
+
+  Setting this to zero gives
+
+  \[
+  \sum_{i=1}^{n}\left(y_i - \hat\beta_0 - x_i\hat\beta_1\right)x_i = 0
+  \quad\Longleftrightarrow\quad \sum_{i=1}^{n}x_i\hat u_i = 0 .
+  \]
+
+  This is the same as saying we estimate \(\beta_1\) to make the residuals orthogonal to the regressor.
+</div>
+
+\[
+(\hat\beta_0, \hat\beta) = \arg\min_{\beta_0,\, \beta} \sum_{i=1}^{n} \left(y_i - \beta_0 - \beta\,x_i\right)^2 .
+\]
+
+<p>
+  Note that a residual \(\hat u_i\) is not the same as the error \(u_i\). The error is unobserved and
+  belongs to the population model, while the residual is what is left over after fitting the line to the data.
+  Below is how \(\hat\beta_0\) and \(\hat\beta\) are fitted.
+</p>
+<img src="ols_with_intercept.gif" alt="Fitting slope and intercept" style="max-width:100%">
+
+<h3>OLS with an intercept vs OLS without an intercept</h3>
+
+<p>
+  When the model includes a constant, the first-order condition for \(\beta_0\) forces
+  \(\sum_{i=1}^{n}\hat u_i = 0\). Together with the condition for \(\beta_1\), \(\sum_{i=1}^{n}x_i\hat u_i = 0\),
+  this makes the residuals uncorrelated with the regressor:
+</p>
+
+\[
+\operatorname{Cov}(\hat u, x) = \frac{1}{n}\sum_{i=1}^{n}x_i\hat u_i - \bar x\cdot\frac{1}{n}\sum_{i=1}^{n}\hat u_i = 0 - 0 = 0 .
+\]
+
+<p>
+  This is what the navy dashed line in the right-hand chart of the GIF above shows: the line through the
+  residuals is flat.
+</p>
+
+<p>
+  Without a constant, there is no first-order condition for \(\beta_0\), so \(\sum\hat u_i = 0\) is no longer guaranteed.
+  Least squares still gives \(\sum x_i\hat u_i = 0\), but then
+  \(\operatorname{Cov}(\hat u, x) = -\bar x\cdot\frac{1}{n}\sum\hat u_i\), which is generally not zero.
+  The residuals are therefore correlated with the regressor, and the line through them slopes.
+</p>
+
+<img src="ols_no_intercept.gif" alt="Fitting slope only" style="max-width:100%">
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),f2=v=>(Math.abs(v)<0.005?0:v).toFixed(2);
+const tx=e=>{try{window.MathJax&&MathJax.typesetPromise&&MathJax.typesetPromise([e])}catch(_){}};
+function rng(s){return()=>(s=s*16807%2147483647)/2147483647}
+function gauss(r){return Math.sqrt(-2*Math.log(r()||1e-9))*Math.cos(6.283185*r())}
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+function scale(w,h,xr,yr){const m={l:44,r:12,t:12,b:34};return{X:x=>m.l+(x-xr[0])/(xr[1]-xr[0])*(w-m.l-m.r),Y:y=>h-m.b-(y-yr[0])/(yr[1]-yr[0])*(h-m.t-m.b),w,h,m}}
+function ticks([a,b]){const st=(b-a)/4,r=[];for(let v=a;v<=b+1e-9;v+=st)r.push(+v.toFixed(1));return r}
+function axes(S,xl,yl,zero,xr,yr){let o=`<line class="ax" x1="${S.m.l}" y1="${S.h-S.m.b}" x2="${S.w-S.m.r}" y2="${S.h-S.m.b}"/><line class="ax" x1="${S.m.l}" y1="${S.m.t}" x2="${S.m.l}" y2="${S.h-S.m.b}"/>`;
+ if(zero!==undefined)o+=`<line class="zero" x1="${S.m.l}" x2="${S.w-S.m.r}" y1="${S.Y(zero)}" y2="${S.Y(zero)}"/>`;
+ for(const v of ticks(xr))o+=`<text class="tx" x="${S.X(v)}" y="${S.h-S.m.b+16}" text-anchor="middle">${v}</text>`;
+ for(const v of ticks(yr))o+=`<text class="tx" x="${S.m.l-5}" y="${S.Y(v)+4}" text-anchor="end">${v}</text>`;
+ return o+`<text class="tx" x="${S.w/2}" y="${S.h-4}" text-anchor="middle">${xl}</text><text class="tx" x="12" y="${S.m.t+8}">${yl}</text>`}
+const dot=(S,x,y,c,r=3,o=.7)=>`<circle cx="${S.X(x)}" cy="${S.Y(y)}" r="${r}" fill="${c}" opacity="${o}"/>`;
+const ln=(S,x1,y1,x2,y2,c,w=2,d='')=>`<line x1="${S.X(x1)}" y1="${S.Y(y1)}" x2="${S.X(x2)}" y2="${S.Y(y2)}" stroke="${c}" stroke-width="${w}" ${d?`stroke-dasharray="${d}"`:''}/>`;
+const PK='#eca9c5',NV='#07264c',BG='#fff0f7';
+function ols(x,y){const mx=mean(x),my=mean(y);let c=0,v=0;x.forEach((xi,i)=>{c+=(xi-mx)*(y[i]-my);v+=(xi-mx)**2});const b=c/v;return{b,a:my-b*mx}}
+
+/* Section 1 */
+(function () {
+  const R = rng(7), N = 200, X = [], E = [];
+  for (let i = 0; i < N; i++) { X.push(6 + 16 * R()); E.push(3 * gauss(R)); }
+
+  // g(X) is the part of u that moves with X (zero in the independent case)
+  const g = x => 0.6 * (x - 14);
+
+  function draw(dep) {
+    const U = X.map((x, i) => E[i] + (dep ? g(x) : 0));
+    const xr = [6, 22], yr = [-9, 9], S = scale(440, 320, xr, yr);
+    let svg = axes(S, 'X', 'u', 0, xr, yr);
+
+    X.forEach((x, i) => { svg += dot(S, x, Math.max(-9, Math.min(9, U[i])), NV, 2.5, .45); });
+
+    // average of u inside each bracket of X
+    const pts = [];
+    for (let lo = 6; lo < 22; lo += 2) {
+      const idx = X.map((x, i) => (x >= lo && x < lo + 2 ? i : -1)).filter(i => i >= 0);
+      if (idx.length >= 4) pts.push([lo + 1, mean(idx.map(i => U[i]))]);
+    }
+    if (dep) svg += ln(S, 6, g(6), 22, g(22), NV, 1.5, '6 5');   // true g(X)
+    svg += `<polyline fill="none" stroke="${PK}" stroke-width="3"
+            points="${pts.map(p => S.X(p[0]) + ',' + S.Y(p[1])).join(' ')}"/>`;
+    svg += pts.map(p => dot(S, p[0], p[1], PK, 4.5, 1)).join('');
+    document.querySelector('#mi').innerHTML = svg;
+
+    const m = pts.map(p => p[1]), lo = Math.min(...m), hi = Math.max(...m);
+    document.querySelector('#miCap').innerHTML = dep
+      ? 'Dots are errors \\(u\\). The pink line (average of \\(u\\) in each bracket of \\(X\\)) now slopes with \\(X\\), following the dashed navy line \\(g(X)\\). Here \\(E[u \\mid X] = g(X)\\), which changes as \\(X\\) changes.'
+      : 'Dots are errors \\(u\\). The pink line (average of \\(u\\) in each bracket of \\(X\\)) is flat at zero, so \\(E[u \\mid X] = E[u] = 0\\).  ';
+    
+    document.querySelector('#miInd').classList.toggle('on', !dep);
+    document.querySelector('#miDep').classList.toggle('on', dep);
+    tx(document.querySelector('#miCap')); tx(document.querySelector('#miRo'));
+  }
+
+  document.querySelector('#miInd').onclick = () => draw(false);
+  document.querySelector('#miDep').onclick = () => draw(true);
+  draw(false);
+})();
+
+
+const R1=rng(11),N=260,M=[],E=[];for(let i=0;i<N;i++){M.push(gauss(R1));E.push(gauss(R1))}
+function s1(){const rho=+$('#rho').value;$('#rhoV').textContent=rho.toFixed(2);
+ const ed=M.map((m,i)=>14+2*(rho*m+Math.sqrt(1-rho*rho)*E[i])),u=M.map(m=>3*m),w=ed.map((e,i)=>10+1.5*e+u[i]);
+ const xr=[6,22],A=scale(440,320,xr,[-9,9]),B=scale(440,320,xr,[0,60]);
+ let a=axes(A,'education (years)','u',0,xr,[-9,9]),b=axes(B,'education (years)','wage',undefined,xr,[0,60]);
+ ed.forEach((e,i)=>{a+=dot(A,e,u[i],NV,2.5,.45);b+=dot(B,e,w[i],NV,2.5,.45)});
+ const pts=[],mu=[];for(let lo=8;lo<20;lo+=2){const ix=ed.map((e,i)=>e>=lo&&e<lo+2?i:-1).filter(i=>i>=0);if(ix.length>=4){const mv=mean(ix.map(i=>u[i]));mu.push(mv);pts.push([lo+1,mv])}}
+ a+=`<polyline fill="none" stroke="${PK}" stroke-width="3" points="${pts.map(p=>A.X(p[0])+','+A.Y(p[1])).join(' ')}"/>`+pts.map(p=>dot(A,p[0],p[1],PK,4.5,1)).join('');
+ const o=ols(ed,w);b+=ln(B,6,19,22,43,NV,2,'6 5')+ln(B,6,o.a+o.b*6,22,o.a+o.b*22,PK,3);
+ $('#s1a').innerHTML=a;$('#s1b').innerHTML=b;
+ const lo=Math.min(...mu),hi=Math.max(...mu),flat=hi-lo<1.2;
+ $('#r1').innerHTML=`<span>\\(E[u \\mid \\text{Ed}]\\) across brackets: <b class="${flat?'':'bad'}">${f2(lo)} to ${f2(hi)}</b></span><span>Estimated slope \\(\\hat\\beta_1\\): <b class="${Math.abs(o.b-1.5)<.2?'':'bad'}">${f2(o.b)}</b> (true \\(1.50\\))</span>`;tx($('#r1'))}
+$('#rho').oninput=s1;$('#b0').onclick=()=>{$('#rho').value=0;s1()};$('#b1').onclick=()=>{$('#rho').value=0.7;s1()};
+
+/* Section 2 */
+function s2(){const b=+$('#b2').value;$('#b2V').textContent=b.toFixed(2);const b1=2;
+ const yr=[-8,12],xa=[-4,4],xb=[0,16],A=scale(440,280,xa,yr),B=scale(440,280,xb,yr);
+ let a=axes(A,'x','y',undefined,xa,yr),c=axes(B,'z = x^2','y',undefined,xb,yr),pa=[];
+ for(let x=-4;x<=4.001;x+=.1)pa.push(A.X(x)+','+A.Y(b1+b*x*x));
+ a+=`<polyline fill="none" stroke="${PK}" stroke-width="3" points="${pa.join(' ')}"/>`;
+ c+=ln(B,0,b1,16,b1+b*16,PK,3);
+ const R=rng(5);for(let i=0;i<24;i++){const x=-4+8*R(),y=b1+b*x*x+gauss(R)*.8;a+=dot(A,x,y,NV,2.8,.7);c+=dot(B,x*x,y,NV,2.8,.7)}
+ $('#s2a').innerHTML=a;$('#s2b').innerHTML=c}
+$('#b2').oninput=s2;
+
+s1();s2();
+</script>
+</body>
+</html>
